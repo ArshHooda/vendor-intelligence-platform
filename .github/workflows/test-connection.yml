@@ -1,0 +1,103 @@
+name: Test Supabase connection
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install database driver
+        run: python -m pip install "psycopg[binary]>=3.2,<4"
+
+      - name: Check database and source files
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PGHOST: ${{ secrets.SUPABASE_DB_HOST }}
+          PGUSER: ${{ secrets.SUPABASE_DB_USER }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGPORT: "5432"
+          PGDATABASE: postgres
+          PGSSLMODE: require
+          PGCONNECT_TIMEOUT: "20"
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import urllib.request
+          import urllib.error
+          import psycopg
+
+          required = [
+              "SUPABASE_URL", "SUPABASE_SECRET_KEY",
+              "PGHOST", "PGUSER", "PGPASSWORD"
+          ]
+          missing = [name for name in required if not os.getenv(name)]
+          if missing:
+              sys.exit("Missing GitHub secrets: " + ", ".join(missing))
+
+          try:
+              with psycopg.connect() as conn:
+                  conn.execute("SET TRANSACTION READ ONLY")
+                  user = conn.execute("SELECT current_user").fetchone()[0]
+                  if user != "ap_importer":
+                      sys.exit("FAIL: Database login is not ap_importer.")
+
+                  tables = [
+                      "quality.pipeline_runs",
+                      "staging.source_files",
+                      "staging.source_rows",
+                  ]
+                  for table in tables:
+                      conn.execute(f"SELECT 1 FROM {table} LIMIT 0")
+                      privileges = ["SELECT", "INSERT"]
+                      if table == "quality.pipeline_runs":
+                          privileges.append("UPDATE")
+                      for privilege in privileges:
+                          allowed = conn.execute(
+                              "SELECT has_table_privilege(current_user, %s, %s)",
+                              (table, privilege),
+                          ).fetchone()[0]
+                          if not allowed:
+                              sys.exit(f"FAIL: Missing {privilege} on {table}")
+              print("PASS: Importer login and table permissions")
+          except psycopg.Error as exc:
+              sys.exit(
+                  f"FAIL: Database connection/check: {type(exc).__name__}; "
+                  f"SQLSTATE={exc.sqlstate or 'unavailable'}. "
+                  "Check pooler host, importer username and password."
+              )
+
+          base = os.environ["SUPABASE_URL"].rstrip("/")
+          key = os.environ["SUPABASE_SECRET_KEY"]
+          files = ["Bills972.xlsx", "4DMTVendorListingResults775.xlsx"]
+
+          for filename in files:
+              url = f"{base}/storage/v1/object/ap-source-files/{filename}"
+              request = urllib.request.Request(
+                  url, headers={"apikey": key}
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      signature = response.read(4)
+                  if signature != b"PK\x03\x04":
+                      sys.exit(f"FAIL: Unexpected file format: {filename}")
+                  print(f"PASS: Private file readable: {filename}")
+              except urllib.error.HTTPError as exc:
+                  sys.exit(f"FAIL: Storage HTTP {exc.code}: {filename}")
+              except urllib.error.URLError:
+                  sys.exit("FAIL: Storage connection. Check SUPABASE_URL.")
+
+          print("All connection checks passed. No data imported.")
+          PY
