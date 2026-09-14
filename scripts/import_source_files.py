@@ -143,6 +143,15 @@ def parse_workbook(data: bytes, object_path: str) -> list[dict[str, Any]]:
     return parsed_rows
 
 
+def workbook_headers(parsed_rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+    headers_by_sheet: dict[str, list[str]] = {}
+    for row in parsed_rows:
+        sheet_name = row["sheet_name"]
+        if sheet_name not in headers_by_sheet:
+            headers_by_sheet[sheet_name] = list(row["row_data"].keys())
+    return headers_by_sheet
+
+
 def table_columns(conn: psycopg.Connection[Any], schema: str, table: str) -> dict[str, Column]:
     rows = conn.execute(
         """
@@ -177,6 +186,8 @@ def choose(columns: dict[str, Column], names: list[str]) -> str | None:
 
 def prepare_value(column: Column, value: Any) -> Any:
     if isinstance(value, (dict, list)):
+        if isinstance(value, list) and column.data_type == "ARRAY":
+            return value
         if column.data_type in {"json", "jsonb"} or column.udt_name in {"json", "jsonb"}:
             return Jsonb(value)
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
@@ -290,15 +301,22 @@ def source_file_values(
     sha256: str,
     rows_loaded: int,
     sheets_loaded: int,
+    headers: dict[str, list[str]],
     sheet_name: str = "workbook",
 ) -> dict[str, Any]:
     file_name = object_path.rsplit("/", 1)[-1]
     loaded_at = datetime.now(timezone.utc)
+    flat_headers = [
+        f"{sheet}.{header}" if len(headers) > 1 else header
+        for sheet, sheet_headers in headers.items()
+        for header in sheet_headers
+    ]
     metadata = {
         "bucket": bucket,
         "object_path": object_path,
         "file_name": file_name,
         "sheet_name": sheet_name,
+        "headers": headers,
         "file_size_bytes": len(data),
         "rows_loaded": rows_loaded,
         "sheets_loaded": sheets_loaded,
@@ -314,6 +332,10 @@ def source_file_values(
         "sheet_name": sheet_name,
         "worksheet_name": sheet_name,
         "sheet": sheet_name,
+        "headers": headers,
+        "column_headers": headers,
+        "header_names": headers,
+        "columns": headers,
         "bucket": bucket,
         "bucket_name": bucket,
         "storage_bucket": bucket,
@@ -353,6 +375,12 @@ def source_file_values(
         "details": metadata,
         "import_metadata": metadata,
     }
+    for header_column in ["headers", "column_headers", "header_names", "columns"]:
+        if header_column in columns:
+            if columns[header_column].data_type == "ARRAY":
+                values[header_column] = flat_headers
+            else:
+                values[header_column] = headers
 
     for id_name in ["source_file_id", "id", "file_id"]:
         if id_name in columns:
@@ -518,6 +546,7 @@ def main() -> int:
                     continue
 
                 parsed_rows = parse_workbook(data, object_path)
+                headers = workbook_headers(parsed_rows)
                 source_file_id = str(uuid.uuid4()) if file_id_column else None
                 sheets_loaded = len({row["sheet_name"] for row in parsed_rows})
 
@@ -537,6 +566,7 @@ def main() -> int:
                             sha256,
                             len(parsed_rows),
                             sheets_loaded,
+                            headers,
                         ),
                         file_id_column,
                     )
