@@ -25,3 +25,5 @@ headers and their matching cell positions.
 The authoritative ingestion table definitions and importer access policy are in
 `sql/staging/001_import_tables.sql` and `sql/staging/002_importer_access.sql`.
 The importer also supports `--schema-only` and `--preflight-only` diagnostics.
+Changes to the importer run the preflight automatically through the
+**Validate source importer** GitHub Actions workflow.
