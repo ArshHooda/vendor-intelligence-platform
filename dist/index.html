@@ -57,6 +57,56 @@
         <span id="errorMessage">Showing the last verified snapshot.</span>
       </div>
 
+      <section class="filter-panel" aria-labelledby="filters-title">
+        <div class="filter-heading">
+          <div>
+            <p class="eyebrow">Explore the portfolio</p>
+            <h3 id="filters-title">Filter vendor intelligence</h3>
+          </div>
+          <button class="reset-button" id="resetFilters" type="button" disabled>
+            Clear filters
+          </button>
+        </div>
+
+        <div class="filter-grid">
+          <label class="filter-field">
+            <span>Vendor</span>
+            <select id="vendorFilter">
+              <option value="all">All vendors</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Country</span>
+            <select id="countryFilter">
+              <option value="all">All countries</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Vendor status</span>
+            <select id="statusFilter">
+              <option value="all">All statuses</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Approval status</span>
+            <select id="approvalFilter">
+              <option value="all">All approval statuses</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Risk type</span>
+            <select id="riskFilter">
+              <option value="all">All risk types</option>
+            </select>
+          </label>
+        </div>
+
+        <p class="filter-result" aria-live="polite">
+          <strong id="filteredVendorCount">—</strong>
+          <span id="filterResultText">vendors in the current view</span>
+        </p>
+      </section>
+
       <section class="metric-grid" aria-label="Key performance indicators">
         <article class="metric-card metric-card--primary">
           <div class="metric-label-row">
@@ -102,7 +152,7 @@
               <p class="eyebrow">Concentration</p>
               <h3>Largest vendor exposure</h3>
             </div>
-            <span class="risk-chip risk-chip--high">High attention</span>
+            <span class="risk-chip risk-chip--high" id="concentrationChip">High attention</span>
           </div>
 
           <div class="concentration-body">
@@ -158,7 +208,7 @@
             <p class="eyebrow">Spend concentration</p>
             <h3 id="top-vendors-title">Top vendors</h3>
           </div>
-          <p>Ranked by total bill amount</p>
+          <p id="topVendorsNote">Ranked by total bill amount</p>
         </div>
         <div class="table-scroll">
           <table>
@@ -183,7 +233,7 @@
             <p class="eyebrow">Review queue</p>
             <h3 id="risk-queue-title">Vendor risks</h3>
           </div>
-          <p>Concentration, duplicate records, and held payments</p>
+          <p id="riskResultsNote">Concentration, duplicate records, and held payments</p>
         </div>
         <div class="table-scroll">
           <table>

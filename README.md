@@ -39,8 +39,10 @@ Supabase REST API:
 - `public.payment_hold_summary`
 
 It shows the latest spend KPIs, vendor concentration, payment holds, and the
-vendor risk queue. If the live API is unavailable, it clearly labels and displays
-the last verified snapshot instead of leaving the page empty.
+vendor risk queue. Vendor, country, vendor status, approval status, and risk-type
+dropdowns recalculate the KPIs and tables immediately. If the live API is
+unavailable, it clearly labels and displays the last verified snapshot instead
+of leaving the page empty.
 
 To preview it locally, serve the `dist` directory with any static HTTP server.
 For example:
