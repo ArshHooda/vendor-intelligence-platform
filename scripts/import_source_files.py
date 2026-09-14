@@ -283,6 +283,7 @@ def existing_source_file_id(
 def source_file_values(
     columns: dict[str, Column],
     source_file_id: str | None,
+    pipeline_run_id: Any,
     bucket: str,
     object_path: str,
     data: bytes,
@@ -303,6 +304,10 @@ def source_file_values(
         "source_file_id": source_file_id,
         "id": source_file_id,
         "file_id": source_file_id,
+        "run_id": pipeline_run_id,
+        "pipeline_run_id": pipeline_run_id,
+        "import_run_id": pipeline_run_id,
+        "load_run_id": pipeline_run_id,
         "bucket": bucket,
         "bucket_name": bucket,
         "storage_bucket": bucket,
@@ -343,6 +348,7 @@ def source_file_values(
 def source_row_insert_rows(
     columns: dict[str, Column],
     source_file_id: Any,
+    pipeline_run_id: Any,
     object_path: str,
     parsed_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -366,6 +372,7 @@ def source_row_insert_rows(
         raise RuntimeError(f"{file_id_column} is required but no source file id is available.")
 
     file_name = object_path.rsplit("/", 1)[-1]
+    run_id_column = choose(columns, ["run_id", "pipeline_run_id", "import_run_id", "load_run_id"])
     rows: list[dict[str, Any]] = []
     for parsed_row in parsed_rows:
         row: dict[str, Any] = {data_column: parsed_row["row_data"]}
@@ -381,6 +388,8 @@ def source_row_insert_rows(
             row[path_column] = object_path
         if filename_column:
             row[filename_column] = file_name
+        if run_id_column and pipeline_run_id is not None:
+            row[run_id_column] = pipeline_run_id
         rows.append(row)
     return rows
 
@@ -504,6 +513,7 @@ def main() -> int:
                         source_file_values(
                             source_files_columns,
                             source_file_id,
+                            run_id,
                             bucket,
                             object_path,
                             data,
@@ -517,7 +527,7 @@ def main() -> int:
                         source_file_id = returned_id
 
                     rows_to_insert = source_row_insert_rows(
-                        source_rows_columns, source_file_id, object_path, parsed_rows
+                        source_rows_columns, source_file_id, run_id, object_path, parsed_rows
                     )
                     insert_many(
                         conn,
