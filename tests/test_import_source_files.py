@@ -8,6 +8,7 @@ from scripts.import_source_files import (
     SourceRow,
     WorkbookData,
     infer_source_type,
+    insert_source_rows,
     parse_workbook,
     validate_import_plan,
 )
@@ -63,6 +64,36 @@ class ImportSourceFilesTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "Duplicate source_type/sheet_name"):
             validate_import_plan(books)
+
+    def test_source_rows_use_cursor_executemany_in_batches(self) -> None:
+        calls = []
+
+        class FakeCursor:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return False
+
+            def executemany(self, query, params):
+                calls.append((query, list(params)))
+
+        class FakeConnection:
+            def cursor(self):
+                return FakeCursor()
+
+        sheet = SheetData(
+            name="Data",
+            header_row_number=1,
+            headers=("ID",),
+            rows=(SourceRow(2, ("1",)), SourceRow(3, ("2",))),
+        )
+
+        insert_source_rows(FakeConnection(), "file-id", sheet, batch_size=1)
+
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all("staging.source_rows" in query for query, _ in calls))
+        self.assertEqual([params[0][1] for _, params in calls], [2, 3])
 
 
 if __name__ == "__main__":

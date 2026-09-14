@@ -1074,13 +1074,14 @@ def insert_source_rows(
     """
     for start in range(0, len(sheet.rows), batch_size):
         batch = sheet.rows[start : start + batch_size]
-        conn.executemany(
-            query,
-            [
-                (file_id, row.excel_row_number, Jsonb(list(row.cell_values)))
-                for row in batch
-            ],
-        )
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                query,
+                [
+                    (file_id, row.excel_row_number, Jsonb(list(row.cell_values)))
+                    for row in batch
+                ],
+            )
 
 
 def probe_database_contract(
