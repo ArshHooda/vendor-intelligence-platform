@@ -1,11 +1,6 @@
 name: Import source files
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/import-source-files.yml
   workflow_dispatch:
     inputs:
       files:
