@@ -1,6 +1,11 @@
 name: Import source files
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/import-source-files.yml
   workflow_dispatch:
     inputs:
       files:
@@ -47,5 +52,5 @@ jobs:
           PGSSLMODE: require
           PGCONNECT_TIMEOUT: "20"
           SOURCE_BUCKET: ap-source-files
-          SOURCE_FILES: ${{ inputs.files }}
+          SOURCE_FILES: ${{ inputs.files || 'Bills972.xlsx,4DMTVendorListingResults775.xlsx' }}
         run: python scripts/import_source_files.py
