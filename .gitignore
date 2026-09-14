@@ -209,6 +209,12 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# The static dashboard is authored directly in dist/ for Sites hosting.
+!dist/
+!dist/index.html
+!dist/styles.css
+!dist/app.js
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

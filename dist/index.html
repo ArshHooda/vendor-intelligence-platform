@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Live vendor spend, concentration, and payment-hold reporting for finance operations."
+    />
+    <meta name="color-scheme" content="light" />
+    <title>Vendor Intelligence</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23182e2a'/%3E%3Cpath d='M16 18h9l7 24 7-24h9L37 49H27z' fill='%23ddff8f'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to dashboard</a>
+
+    <header class="topbar">
+      <div class="brand-block">
+        <span class="brand-mark" aria-hidden="true">VI</span>
+        <div>
+          <p class="eyebrow">Finance operations</p>
+          <h1>Vendor Intelligence</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="connection-status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+          <span id="statusText">Connecting</span>
+        </div>
+        <button class="refresh-button" id="refreshButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 0 0 6.7 6.7L4 11m16 2-2.7 4.3A7 7 0 0 1 5.5 15" />
+          </svg>
+          Refresh data
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="overview-heading" aria-labelledby="overview-title">
+        <div>
+          <p class="eyebrow">Accounts payable overview</p>
+          <h2 id="overview-title">Spend and vendor risk at a glance</h2>
+        </div>
+        <p class="updated-at" id="updatedAt">Loading the latest reporting views…</p>
+      </section>
+
+      <div class="error-banner" id="errorBanner" role="alert" hidden>
+        <strong>Live data could not be reached.</strong>
+        <span id="errorMessage">Showing the last verified snapshot.</span>
+      </div>
+
+      <section class="metric-grid" aria-label="Key performance indicators">
+        <article class="metric-card metric-card--primary">
+          <div class="metric-label-row">
+            <p>Total spend</p>
+            <span class="metric-icon" aria-hidden="true">$</span>
+          </div>
+          <strong class="metric-value" id="totalSpend">—</strong>
+          <span class="metric-note" id="averageBill">Average bill —</span>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-label-row">
+            <p>Bills analyzed</p>
+            <span class="metric-icon" aria-hidden="true">#</span>
+          </div>
+          <strong class="metric-value" id="totalBills">—</strong>
+          <span class="metric-note">All bills matched to a vendor</span>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-label-row">
+            <p>Vendors with spend</p>
+            <span class="metric-icon" aria-hidden="true">V</span>
+          </div>
+          <strong class="metric-value" id="vendorsWithBills">—</strong>
+          <span class="metric-note" id="largestBill">Largest bill —</span>
+        </article>
+
+        <article class="metric-card metric-card--attention">
+          <div class="metric-label-row">
+            <p>Payment holds</p>
+            <span class="metric-icon" aria-hidden="true">!</span>
+          </div>
+          <strong class="metric-value" id="paymentHolds">—</strong>
+          <span class="metric-note" id="paymentHoldSpend">Spend on hold —</span>
+        </article>
+      </section>
+
+      <section class="decision-grid" aria-label="Primary risk analysis">
+        <article class="panel concentration-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Concentration</p>
+              <h3>Largest vendor exposure</h3>
+            </div>
+            <span class="risk-chip risk-chip--high">High attention</span>
+          </div>
+
+          <div class="concentration-body">
+            <div class="concentration-score">
+              <strong id="topVendorShare">—</strong>
+              <span>of total spend</span>
+            </div>
+            <div class="concentration-detail">
+              <p id="topVendorName">Loading vendor…</p>
+              <strong id="topVendorSpend">—</strong>
+              <div
+                class="progress-track"
+                role="progressbar"
+                aria-label="Top vendor share of total spend"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                id="concentrationProgress"
+              >
+                <span id="concentrationBar"></span>
+              </div>
+              <p class="panel-note" id="concentrationNote">Calculating exposure…</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel hold-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Action required</p>
+              <h3>Payment holds</h3>
+            </div>
+            <span class="risk-chip risk-chip--medium" id="holdCountChip">— bills</span>
+          </div>
+          <div class="hold-amount" id="holdAmount">—</div>
+          <p class="hold-reason" id="holdReason">Loading hold reason…</p>
+          <dl class="date-range">
+            <div>
+              <dt>Earliest bill</dt>
+              <dd id="earliestHold">—</dd>
+            </div>
+            <div>
+              <dt>Latest bill</dt>
+              <dd id="latestHold">—</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="panel table-panel" aria-labelledby="top-vendors-title">
+        <div class="panel-heading table-heading">
+          <div>
+            <p class="eyebrow">Spend concentration</p>
+            <h3 id="top-vendors-title">Top vendors</h3>
+          </div>
+          <p>Ranked by total bill amount</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Vendor</th>
+                <th scope="col">Bills</th>
+                <th scope="col">Total spend</th>
+                <th scope="col">Share</th>
+              </tr>
+            </thead>
+            <tbody id="topVendorsBody">
+              <tr class="loading-row"><td colspan="4">Loading top vendors…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel table-panel" aria-labelledby="risk-queue-title">
+        <div class="panel-heading table-heading">
+          <div>
+            <p class="eyebrow">Review queue</p>
+            <h3 id="risk-queue-title">Vendor risks</h3>
+          </div>
+          <p>Concentration, duplicate records, and held payments</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Risk</th>
+                <th scope="col">Vendor</th>
+                <th scope="col">Status</th>
+                <th scope="col">Bills</th>
+                <th scope="col">Exposure</th>
+              </tr>
+            </thead>
+            <tbody id="riskQueueBody">
+              <tr class="loading-row"><td colspan="5">Loading risk queue…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Source: validated AP bills and vendor master data in Supabase.</p>
+    </footer>
+  </body>
+</html>

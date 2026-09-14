@@ -27,3 +27,32 @@ The authoritative ingestion table definitions and importer access policy are in
 The importer also supports `--schema-only` and `--preflight-only` diagnostics.
 Changes to the importer run the preflight automatically through the
 **Validate source importer** GitHub Actions workflow.
+
+## Vendor intelligence dashboard
+
+The dependency-free dashboard in `dist/` reads four browser-safe views from the
+Supabase REST API:
+
+- `public.dashboard_summary`
+- `public.top_vendor_concentration`
+- `public.vendor_risk_summary`
+- `public.payment_hold_summary`
+
+It shows the latest spend KPIs, vendor concentration, payment holds, and the
+vendor risk queue. If the live API is unavailable, it clearly labels and displays
+the last verified snapshot instead of leaving the page empty.
+
+To preview it locally, serve the `dist` directory with any static HTTP server.
+For example:
+
+```powershell
+python -m http.server 5173 --directory dist
+```
+
+Then open `http://localhost:5173`. The public Supabase publishable key is used in
+the browser; secret and service-role keys must never be added to dashboard code.
+
+The SQL needed to reproduce the browser-safe views and grants is in
+`sql/analytics/001_public_dashboard_views.sql`. Keep the underlying `staging`,
+`core`, `quality`, and `analytics` schemas out of Supabase Data API exposed
+schemas; only the four narrow `public` views are queried by the dashboard.
