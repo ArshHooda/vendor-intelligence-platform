@@ -30,29 +30,46 @@ Changes to the importer run the preflight automatically through the
 
 ## Vendor intelligence dashboard
 
-The dependency-free dashboard in `dist/` reads four browser-safe views from the
-Supabase REST API:
+The dependency-free dashboard in `dist/` presents vendor-level aggregates built
+from the two private source workbooks. It includes spend and bill KPIs, open
+spend, payment holds, purchase frequency, average purchase gaps, recency,
+concentration, dormant vendors, a configurable top-spenders ranking, and a
+sortable vendor directory.
 
-- `public.dashboard_summary`
-- `public.top_vendor_concentration`
-- `public.vendor_risk_summary`
-- `public.payment_hold_summary`
+Vendor, payment status, last purchase, frequency, average gap, country, vendor
+status, approval status, and risk dropdowns recalculate the complete dashboard.
+Raw invoice rows and source workbooks are never added to the public site.
 
-It shows the latest spend KPIs, vendor concentration, payment holds, and the
-vendor risk queue. Vendor, country, vendor status, approval status, and risk-type
-dropdowns recalculate the KPIs and tables immediately. If the live API is
-unavailable, it clearly labels and displays the last verified snapshot instead
-of leaving the page empty.
+Build the aggregate snapshot locally:
 
-To preview it locally, serve the `dist` directory with any static HTTP server.
-For example:
+```powershell
+python scripts/build_dashboard_data.py `
+  --bills-file "C:\path\to\Bills972.xlsx" `
+  --vendors-file "C:\path\to\4DMTVendorListingResults775.xlsx"
+```
+
+Then serve the `dist` directory with any static HTTP server:
 
 ```powershell
 python -m http.server 5173 --directory dist
 ```
 
 Then open `http://localhost:5173`. The public Supabase publishable key is used in
-the browser; secret and service-role keys must never be added to dashboard code.
+the browser only as a summary fallback; secret and service-role keys must never
+be added to dashboard code.
+
+### Free GitHub Pages deployment
+
+The **Deploy dashboard to GitHub Pages** workflow downloads both workbooks from
+the private `ap-source-files` Supabase Storage bucket, builds the aggregate JSON
+inside the GitHub Actions runner, and publishes `dist/`. It uses the existing
+`SUPABASE_URL` and `SUPABASE_SECRET_KEY` repository secrets. The generated JSON
+is an artifact and remains ignored by Git.
+
+In GitHub, open **Settings → Pages**, set **Source** to **GitHub Actions**, then
+run **Deploy dashboard to GitHub Pages** from the Actions tab. The site URL is:
+
+`https://arshhooda.github.io/vendor-intelligence-platform/`
 
 The SQL needed to reproduce the browser-safe views and grants is in
 `sql/analytics/001_public_dashboard_views.sql`. Keep the underlying `staging`,

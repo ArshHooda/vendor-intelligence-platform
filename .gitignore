@@ -214,6 +214,10 @@ tempCodeRunnerFile.py
 !dist/index.html
 !dist/styles.css
 !dist/app.js
+!dist/.nojekyll
+
+# Generated from private source files during local preview and Pages deployment.
+dist/data/
 
 # Marimo
 marimo/_static/

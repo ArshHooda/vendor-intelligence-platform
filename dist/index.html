@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Live vendor spend, concentration, and payment-hold reporting for finance operations."
+      content="Interactive vendor spend, purchase activity, and accounts payable risk analysis."
     />
     <meta name="color-scheme" content="light" />
     <title>Vendor Intelligence</title>
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23182e2a'/%3E%3Cpath d='M16 18h9l7 24 7-24h9L37 49H27z' fill='%23ddff8f'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315282a'/%3E%3Cpath d='M16 18h9l7 24 7-24h9L37 49H27z' fill='%23dfff7e'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="./styles.css" />
     <script src="./app.js" defer></script>
@@ -24,238 +24,282 @@
       <div class="brand-block">
         <span class="brand-mark" aria-hidden="true">VI</span>
         <div>
-          <p class="eyebrow">Finance operations</p>
+          <p class="eyebrow eyebrow--inverse">Finance operations</p>
           <h1>Vendor Intelligence</h1>
         </div>
       </div>
-
       <div class="header-actions">
         <div class="connection-status" role="status" aria-live="polite">
           <span class="status-dot" id="statusDot" aria-hidden="true"></span>
-          <span id="statusText">Connecting</span>
+          <span id="statusText">Loading data</span>
         </div>
-        <button class="refresh-button" id="refreshButton" type="button">
+        <button class="button button--dark" id="refreshButton" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 0 0 6.7 6.7L4 11m16 2-2.7 4.3A7 7 0 0 1 5.5 15" />
           </svg>
-          Refresh data
+          Refresh
         </button>
       </div>
     </header>
 
     <main id="main-content">
-      <section class="overview-heading" aria-labelledby="overview-title">
+      <section class="page-heading" aria-labelledby="overview-title">
         <div>
-          <p class="eyebrow">Accounts payable overview</p>
-          <h2 id="overview-title">Spend and vendor risk at a glance</h2>
+          <p class="eyebrow">Portfolio overview</p>
+          <h2 id="overview-title">Spend and purchasing activity</h2>
         </div>
-        <p class="updated-at" id="updatedAt">Loading the latest reporting views…</p>
+        <div class="as-of-block">
+          <span>Data through</span>
+          <strong id="asOfDate">—</strong>
+        </div>
       </section>
 
       <div class="error-banner" id="errorBanner" role="alert" hidden>
-        <strong>Live data could not be reached.</strong>
-        <span id="errorMessage">Showing the last verified snapshot.</span>
+        <strong>Dashboard data could not be loaded.</strong>
+        <span id="errorMessage"></span>
       </div>
 
       <section class="filter-panel" aria-labelledby="filters-title">
         <div class="filter-heading">
           <div>
-            <p class="eyebrow">Explore the portfolio</p>
-            <h3 id="filters-title">Filter vendor intelligence</h3>
+            <p class="eyebrow">Analysis controls</p>
+            <h3 id="filters-title">Filter the vendor portfolio</h3>
           </div>
-          <button class="reset-button" id="resetFilters" type="button" disabled>
+          <button class="button button--ghost" id="resetFilters" type="button" disabled>
             Clear filters
           </button>
         </div>
 
         <div class="filter-grid">
+          <label class="filter-field filter-field--wide">
+            <span>Vendor name</span>
+            <select id="vendorFilter"><option value="all">All vendors</option></select>
+          </label>
           <label class="filter-field">
-            <span>Vendor</span>
-            <select id="vendorFilter">
-              <option value="all">All vendors</option>
+            <span>Payment status</span>
+            <select id="paymentStatusFilter"><option value="all">All payment statuses</option></select>
+          </label>
+          <label class="filter-field">
+            <span>Last purchase</span>
+            <select id="lastPurchaseFilter">
+              <option value="all">Any date</option>
+              <option value="30">Within 30 days</option>
+              <option value="90">Within 90 days</option>
+              <option value="365">Within 12 months</option>
+              <option value="older">More than 12 months ago</option>
+              <option value="none">No purchase history</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Purchase frequency</span>
+            <select id="frequencyFilter">
+              <option value="all">Any frequency</option>
+              <option value="high">High · 4+ per month</option>
+              <option value="regular">Regular · 1–4 per month</option>
+              <option value="occasional">Occasional · under 1 per month</option>
+              <option value="none">No purchases</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Average purchase gap</span>
+            <select id="gapFilter">
+              <option value="all">Any gap</option>
+              <option value="short">0–30 days</option>
+              <option value="medium">31–90 days</option>
+              <option value="long">More than 90 days</option>
+              <option value="none">Not available</option>
             </select>
           </label>
           <label class="filter-field">
             <span>Country</span>
-            <select id="countryFilter">
-              <option value="all">All countries</option>
-            </select>
+            <select id="countryFilter"><option value="all">All countries</option></select>
           </label>
           <label class="filter-field">
             <span>Vendor status</span>
-            <select id="statusFilter">
-              <option value="all">All statuses</option>
-            </select>
+            <select id="vendorStatusFilter"><option value="all">All vendor statuses</option></select>
           </label>
           <label class="filter-field">
             <span>Approval status</span>
-            <select id="approvalFilter">
-              <option value="all">All approval statuses</option>
-            </select>
+            <select id="approvalFilter"><option value="all">All approval statuses</option></select>
           </label>
           <label class="filter-field">
             <span>Risk type</span>
-            <select id="riskFilter">
-              <option value="all">All risk types</option>
-            </select>
+            <select id="riskFilter"><option value="all">All risk types</option></select>
           </label>
         </div>
 
         <p class="filter-result" aria-live="polite">
           <strong id="filteredVendorCount">—</strong>
-          <span id="filterResultText">vendors in the current view</span>
+          <span id="filterResultText">vendors in this selection</span>
         </p>
       </section>
 
-      <section class="metric-grid" aria-label="Key performance indicators">
+      <section class="metric-grid" aria-label="Selected portfolio metrics">
         <article class="metric-card metric-card--primary">
-          <div class="metric-label-row">
-            <p>Total spend</p>
-            <span class="metric-icon" aria-hidden="true">$</span>
-          </div>
-          <strong class="metric-value" id="totalSpend">—</strong>
-          <span class="metric-note" id="averageBill">Average bill —</span>
+          <p>Total spend</p>
+          <strong id="totalSpend">—</strong>
+          <span id="portfolioShare">— of portfolio</span>
         </article>
-
         <article class="metric-card">
-          <div class="metric-label-row">
-            <p>Bills analyzed</p>
-            <span class="metric-icon" aria-hidden="true">#</span>
-          </div>
-          <strong class="metric-value" id="totalBills">—</strong>
-          <span class="metric-note">All bills matched to a vendor</span>
+          <p>Bills</p>
+          <strong id="totalBills">—</strong>
+          <span id="vendorsWithPurchases">— vendors with purchases</span>
         </article>
-
         <article class="metric-card">
-          <div class="metric-label-row">
-            <p>Vendors with spend</p>
-            <span class="metric-icon" aria-hidden="true">V</span>
-          </div>
-          <strong class="metric-value" id="vendorsWithBills">—</strong>
-          <span class="metric-note" id="largestBill">Largest bill —</span>
+          <p>Average bill</p>
+          <strong id="averageBill">—</strong>
+          <span id="largestBill">Largest bill —</span>
         </article>
-
         <article class="metric-card metric-card--attention">
-          <div class="metric-label-row">
-            <p>Payment holds</p>
-            <span class="metric-icon" aria-hidden="true">!</span>
-          </div>
-          <strong class="metric-value" id="paymentHolds">—</strong>
-          <span class="metric-note" id="paymentHoldSpend">Spend on hold —</span>
+          <p>Open spend</p>
+          <strong id="openSpend">—</strong>
+          <span id="openSpendShare">— of selected spend</span>
+        </article>
+        <article class="metric-card">
+          <p>Purchase frequency</p>
+          <strong id="averageFrequency">—</strong>
+          <span>Average purchases per month</span>
+        </article>
+        <article class="metric-card">
+          <p>Purchase gap</p>
+          <strong id="medianGap">—</strong>
+          <span>Median average gap</span>
+        </article>
+        <article class="metric-card metric-card--attention">
+          <p>Payment holds</p>
+          <strong id="paymentHolds">—</strong>
+          <span id="paymentHoldSpend">— on hold</span>
+        </article>
+        <article class="metric-card">
+          <p>Without purchases</p>
+          <strong id="noPurchaseVendors">—</strong>
+          <span>Vendor master records</span>
         </article>
       </section>
 
-      <section class="decision-grid" aria-label="Primary risk analysis">
-        <article class="panel concentration-panel">
+      <section class="analysis-grid" aria-label="Spender ranking and portfolio signals">
+        <article class="panel ranking-panel">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Concentration</p>
-              <h3>Largest vendor exposure</h3>
+              <p class="eyebrow">Spend ranking</p>
+              <h3>Biggest spenders</h3>
             </div>
-            <span class="risk-chip risk-chip--high" id="concentrationChip">High attention</span>
+            <label class="compact-select">
+              <span class="sr-only">Number of spenders to show</span>
+              <select id="topSpendersCount">
+                <option value="3">Top 3</option>
+                <option value="5">Top 5</option>
+                <option value="10">Top 10</option>
+                <option value="20">Top 20</option>
+              </select>
+            </label>
           </div>
-
-          <div class="concentration-body">
-            <div class="concentration-score">
-              <strong id="topVendorShare">—</strong>
-              <span>of total spend</span>
-            </div>
-            <div class="concentration-detail">
-              <p id="topVendorName">Loading vendor…</p>
-              <strong id="topVendorSpend">—</strong>
-              <div
-                class="progress-track"
-                role="progressbar"
-                aria-label="Top vendor share of total spend"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="0"
-                id="concentrationProgress"
-              >
-                <span id="concentrationBar"></span>
-              </div>
-              <p class="panel-note" id="concentrationNote">Calculating exposure…</p>
-            </div>
-          </div>
+          <ol class="spender-list" id="spenderList">
+            <li class="loading-row">Loading ranking…</li>
+          </ol>
         </article>
 
-        <article class="panel hold-panel">
+        <article class="panel signal-panel">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Action required</p>
-              <h3>Payment holds</h3>
+              <p class="eyebrow">Portfolio signals</p>
+              <h3>What stands out</h3>
             </div>
-            <span class="risk-chip risk-chip--medium" id="holdCountChip">— bills</span>
           </div>
-          <div class="hold-amount" id="holdAmount">—</div>
-          <p class="hold-reason" id="holdReason">Loading hold reason…</p>
-          <dl class="date-range">
+          <dl class="signal-list">
             <div>
-              <dt>Earliest bill</dt>
-              <dd id="earliestHold">—</dd>
+              <dt>Largest vendor share</dt>
+              <dd id="largestVendorShare">—</dd>
+              <span id="largestVendorName">—</span>
             </div>
             <div>
-              <dt>Latest bill</dt>
-              <dd id="latestHold">—</dd>
+              <dt>Top 3 share</dt>
+              <dd id="topThreeShare">—</dd>
+              <span>of spend in this selection</span>
+            </div>
+            <div>
+              <dt>Dormant over 12 months</dt>
+              <dd id="dormantVendors">—</dd>
+              <span>vendors with prior purchases</span>
+            </div>
+            <div>
+              <dt>Flagged vendor records</dt>
+              <dd id="flaggedVendors">—</dd>
+              <span>concentration, holds, or duplicates</span>
             </div>
           </dl>
         </article>
       </section>
 
-      <section class="panel table-panel" aria-labelledby="top-vendors-title">
-        <div class="panel-heading table-heading">
+      <section class="panel directory-panel" aria-labelledby="directory-title">
+        <div class="directory-heading">
           <div>
-            <p class="eyebrow">Spend concentration</p>
-            <h3 id="top-vendors-title">Top vendors</h3>
+            <p class="eyebrow">Vendor directory</p>
+            <h3 id="directory-title">All vendors</h3>
           </div>
-          <p id="topVendorsNote">Ranked by total bill amount</p>
+          <div class="directory-controls">
+            <label class="compact-select compact-select--labeled">
+              <span>Sort by</span>
+              <select id="sortBy">
+                <option value="total_spend">Total spend</option>
+                <option value="vendor_name">Vendor name</option>
+                <option value="last_purchase_date">Last purchase date</option>
+                <option value="bill_count">Purchase count</option>
+                <option value="purchase_frequency_per_month">Purchase frequency</option>
+                <option value="average_gap_days">Average purchase gap</option>
+                <option value="average_bill_amount">Average bill</option>
+              </select>
+            </label>
+            <label class="compact-select compact-select--labeled">
+              <span>Direction</span>
+              <select id="sortDirection">
+                <option value="desc">Highest first</option>
+                <option value="asc">Lowest first</option>
+              </select>
+            </label>
+            <label class="compact-select compact-select--labeled">
+              <span>Rows</span>
+              <select id="pageSize">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+          </div>
         </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Vendor</th>
-                <th scope="col">Bills</th>
-                <th scope="col">Total spend</th>
-                <th scope="col">Share</th>
-              </tr>
-            </thead>
-            <tbody id="topVendorsBody">
-              <tr class="loading-row"><td colspan="4">Loading top vendors…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
-      <section class="panel table-panel" aria-labelledby="risk-queue-title">
-        <div class="panel-heading table-heading">
-          <div>
-            <p class="eyebrow">Review queue</p>
-            <h3 id="risk-queue-title">Vendor risks</h3>
-          </div>
-          <p id="riskResultsNote">Concentration, duplicate records, and held payments</p>
-        </div>
         <div class="table-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">Risk</th>
-                <th scope="col">Vendor</th>
-                <th scope="col">Status</th>
-                <th scope="col">Bills</th>
-                <th scope="col">Exposure</th>
+                <th scope="col"><button data-sort="vendor_name">Vendor</button></th>
+                <th scope="col"><button data-sort="payment_status">Payment status</button></th>
+                <th scope="col"><button data-sort="last_purchase_date">Last purchase</button></th>
+                <th scope="col"><button data-sort="bill_count">Purchases</button></th>
+                <th scope="col"><button data-sort="purchase_frequency_per_month">Per month</button></th>
+                <th scope="col"><button data-sort="average_gap_days">Avg. gap</button></th>
+                <th scope="col"><button data-sort="average_bill_amount">Average bill</button></th>
+                <th scope="col"><button data-sort="total_spend">Total spend</button></th>
               </tr>
             </thead>
-            <tbody id="riskQueueBody">
-              <tr class="loading-row"><td colspan="5">Loading risk queue…</td></tr>
+            <tbody id="vendorTableBody">
+              <tr><td class="empty-row" colspan="8">Loading vendor activity…</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="pagination">
+          <p id="pageSummary">—</p>
+          <div>
+            <button class="button button--ghost" id="previousPage" type="button">Previous</button>
+            <button class="button button--ghost" id="nextPage" type="button">Next</button>
+          </div>
         </div>
       </section>
     </main>
 
     <footer>
-      <p>Source: validated AP bills and vendor master data in Supabase.</p>
+      <p id="sourceNote">Vendor-level metrics derived from validated AP and vendor master data.</p>
     </footer>
   </body>
 </html>
