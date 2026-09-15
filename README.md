@@ -7,6 +7,7 @@
 [![Open Live Demo](https://img.shields.io/badge/Open_Live_Demo-dfff7e?style=for-the-badge&logo=githubpages&logoColor=15282a&labelColor=15282a)](https://arshhooda.github.io/vendor-intelligence-platform/)
 
 [![Deploy dashboard](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/deploy-dashboard-pages.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/deploy-dashboard-pages.yml)
+[![Supabase health check](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/keep-supabase-active.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/keep-supabase-active.yml)
 [![GitHub Pages](https://img.shields.io/badge/Hosted_on-GitHub_Pages-222222?style=flat-square&logo=githubpages)](https://pages.github.com/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 
@@ -118,6 +119,18 @@ To deploy manually:
 3. Choose **Run workflow** on the `main` branch.
 4. Wait for the `build` and `deploy` jobs to complete.
 5. Open the [live dashboard](https://arshhooda.github.io/vendor-intelligence-platform/).
+
+## Supabase activity check
+
+The **Keep Supabase active** workflow runs automatically every day at 06:17
+UTC. It makes three small, read-only database queries and can also be run
+manually from the repository's **Actions** page. It uses the existing
+`SUPABASE_DB_HOST`, `SUPABASE_DB_USER`, and `SUPABASE_DB_PASSWORD` repository
+secrets.
+
+GitHub may disable scheduled workflows in a public repository after 60 days
+without repository activity. If that happens, open **Actions → Keep Supabase
+active** and enable the workflow again.
 
 ## Import pipeline
 
