@@ -71,7 +71,7 @@ jobs:
 
       - name: Deploy dashboard
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Probe deployed site for accidental exposure
         run: python scripts/passive_web_audit.py "${{ steps.deployment.outputs.page_url }}"
