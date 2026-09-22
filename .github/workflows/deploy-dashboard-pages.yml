@@ -8,6 +8,7 @@ on:
       - "scripts/**"
       - "tests/**"
       - "requirements.txt"
+      - "README.md"
       - ".github/workflows/deploy-dashboard-pages.yml"
   workflow_dispatch:
 
