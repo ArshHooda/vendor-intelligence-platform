@@ -8,6 +8,8 @@
 
 [![Deploy dashboard](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/deploy-dashboard-pages.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/deploy-dashboard-pages.yml)
 [![Supabase health check](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/keep-supabase-active.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/keep-supabase-active.yml)
+[![Quality and security](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/quality-security.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/quality-security.yml)
+[![CodeQL](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ArshHooda/vendor-intelligence-platform/actions/workflows/codeql.yml)
 [![GitHub Pages](https://img.shields.io/badge/Hosted_on-GitHub_Pages-222222?style=flat-square&logo=githubpages)](https://pages.github.com/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 
@@ -20,8 +22,8 @@
 Vendor Intelligence turns private vendor-master and accounts-payable workbooks
 into an interactive, browser-based analysis surface. Finance teams can identify
 their largest suppliers, examine open exposure and payment holds, understand
-purchasing cadence, and filter the entire portfolio without publishing raw
-invoice records.
+purchasing cadence, and drill into an allow-listed purchase history without
+publishing source document numbers or private workbook fields.
 
 | Latest validated snapshot | Value |
 |---|---:|
@@ -41,6 +43,7 @@ invoice records.
 | Portfolio signals | Largest-vendor share, top-three concentration, dormant vendors, and flagged records |
 | Vendor filters | Vendor name, payment status, last purchase, purchase frequency, average gap, country, vendor status, approval status, and risk type |
 | Vendor directory | Sortable columns, 25/50/100-row pagination, payment-state labels, purchase dates, frequency, average gap, average bill, and total spend |
+| Vendor drill-down | Vendor profile, purchase reference, date, status, currency, original and USD amounts, hold state, filtering, and pagination |
 | Responsive layout | Desktop, tablet, and mobile support with contained horizontal table scrolling |
 
 ## How it works
@@ -48,10 +51,9 @@ invoice records.
 ```mermaid
 flowchart LR
     A[Private Excel files] -->|GitHub Actions| B[Aggregate builder]
-    B --> C[Vendor-level JSON]
+    B --> C[Allow-listed JSON]
     C --> D[Static dashboard]
     D --> E[GitHub Pages]
-    F[Supabase summary views] -. Browser-safe fallback .-> D
 
     style A fill:#15282a,color:#ffffff,stroke:#15282a
     style B fill:#dfff7e,color:#15282a,stroke:#15282a
@@ -62,18 +64,26 @@ flowchart LR
 
 The deployment workflow downloads `Bills972.xlsx` and
 `4DMTVendorListingResults775.xlsx` from the private Supabase Storage bucket. It
-creates a vendor-level aggregate snapshot inside the GitHub Actions runner and
-publishes only the static dashboard artifact.
+creates a validated snapshot inside the GitHub Actions runner and publishes only
+the approved vendor and purchase fields in the static dashboard artifact.
 
 ## Data privacy
 
 - Source workbooks remain in the private `ap-source-files` Supabase bucket.
-- Raw invoice rows, document numbers, memos, bank fields, and vendor email
-  addresses are excluded from the published dashboard dataset.
+- Source document and transaction numbers are replaced with per-build HMAC
+  pseudonyms before publication.
+- Bank fields, addresses, email addresses, memos, accounts, approvers, internal
+  IDs, programs, indications, and comments are excluded.
 - `dist/data/` is ignored by Git and generated only for previews and deployments.
 - Supabase secret and database credentials are stored as GitHub Actions secrets.
-- The browser contains only the Supabase publishable key for the browser-safe
-  summary fallback.
+- The browser has no Supabase key or direct database connection. It reads the
+  generated static snapshot from the same site origin.
+- The builder and deployment workflow reject any purchase field outside the
+  explicit public allow-list.
+
+See [Security policy](SECURITY.md) and the
+[security review](docs/SECURITY_REVIEW.md) for the threat model, verification
+steps, and remaining limitations.
 
 ## Run locally
 
@@ -120,6 +130,11 @@ To deploy manually:
 4. Wait for the `build` and `deploy` jobs to complete.
 5. Open the [live dashboard](https://arshhooda.github.io/vendor-intelligence-platform/).
 
+For existing Supabase projects, run
+[`sql/analytics/002_restrict_existing_public_views.sql`](sql/analytics/002_restrict_existing_public_views.sql)
+once in the SQL Editor. The static dashboard no longer requires anonymous access
+to the compatibility views.
+
 ## Supabase activity check
 
 The **Keep Supabase active** workflow runs automatically every day at 06:17
@@ -147,19 +162,34 @@ user triggers. The importer also supports `--schema-only` and
 `--preflight-only` diagnostics.
 
 Keep the underlying `staging`, `core`, `quality`, and `analytics` schemas out of
-the Supabase Data API exposed schemas. The dashboard fallback queries only the
-narrow, browser-safe views defined in `sql/analytics/001_public_dashboard_views.sql`.
+the Supabase Data API exposed schemas. Browser roles are also revoked from the
+legacy `public` dashboard views.
+
+## Quality controls
+
+- Python unit tests verify aggregation, pseudonymization, and sensitive-field exclusion.
+- The deployment fails when generated purchase records contain fields outside the allow-list.
+- JavaScript uses DOM `textContent` and avoids HTML injection and dynamic-code sinks.
+- A restrictive Content Security Policy limits scripts, styles, images, and connections.
+- CodeQL scans JavaScript and Python with the `security-extended` query suite.
+- Dependabot monitors the Python and GitHub Actions dependencies.
+
+The development process and AI-assisted review checklist are documented in
+[`docs/AI_ASSISTED_DEVELOPMENT.md`](docs/AI_ASSISTED_DEVELOPMENT.md).
 
 ## Project structure
 
 ```text
-dist/                              Static dashboard
-scripts/build_dashboard_data.py    Vendor aggregate builder
+dist/                              Static dashboard shell and styles
+dist/modules/                      Focused browser modules
+scripts/build_dashboard_data.py    Small data-build command
+scripts/dashboard_data/            Parsing, storage, aggregation, and security modules
+scripts/security_audit.py           Repeatable source and artifact checks
 scripts/import_source_files.py     Validated workbook importer
 sql/staging/                       Staging tables and importer access
-sql/analytics/                     Browser-safe dashboard views
+sql/analytics/                     Summary views and browser-role lockdown
 .github/workflows/                 Import, validation, and deployment automation
-tests/                             Importer validation tests
+tests/                             Importer and dashboard validation tests
 ```
 
 <div align="center">

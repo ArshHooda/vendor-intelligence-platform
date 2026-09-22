@@ -215,6 +215,10 @@ tempCodeRunnerFile.py
 !dist/styles.css
 !dist/app.js
 !dist/.nojekyll
+!dist/modules/
+!dist/modules/*.js
+!dist/styles/
+!dist/styles/*.css
 
 # Generated from private source files during local preview and Pages deployment.
 dist/data/

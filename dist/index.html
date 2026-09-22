@@ -7,6 +7,11 @@
       name="description"
       content="Interactive vendor spend, purchase activity, and accounts payable risk analysis."
     />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; connect-src 'self'; font-src 'self'; form-action 'none'; img-src 'self' data:; object-src 'none'; script-src 'self'; style-src 'self'; upgrade-insecure-requests"
+    />
     <meta name="color-scheme" content="light" />
     <title>Vendor Intelligence</title>
     <link
@@ -15,7 +20,10 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315282a'/%3E%3Cpath d='M16 18h9l7 24 7-24h9L37 49H27z' fill='%23dfff7e'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="./styles.css" />
-    <script src="./app.js" defer></script>
+    <link rel="stylesheet" href="./styles/dashboard.css" />
+    <link rel="stylesheet" href="./styles/vendor-details.css" />
+    <link rel="stylesheet" href="./styles/responsive.css" />
+    <script type="module" src="./app.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -280,10 +288,11 @@
                 <th scope="col"><button data-sort="average_gap_days">Avg. gap</button></th>
                 <th scope="col"><button data-sort="average_bill_amount">Average bill</button></th>
                 <th scope="col"><button data-sort="total_spend">Total spend</button></th>
+                <th scope="col"><span class="table-label">Details</span></th>
               </tr>
             </thead>
             <tbody id="vendorTableBody">
-              <tr><td class="empty-row" colspan="8">Loading vendor activity…</td></tr>
+              <tr><td class="empty-row" colspan="9">Loading vendor activity…</td></tr>
             </tbody>
           </table>
         </div>
@@ -294,6 +303,100 @@
             <button class="button button--ghost" id="previousPage" type="button">Previous</button>
             <button class="button button--ghost" id="nextPage" type="button">Next</button>
           </div>
+        </div>
+      </section>
+
+      <section class="panel vendor-detail-panel" id="vendorDetailSection" aria-labelledby="vendor-detail-title">
+        <div class="vendor-detail-heading">
+          <div>
+            <p class="eyebrow">Vendor drill-down</p>
+            <h3 id="vendor-detail-title">Individual vendor purchases</h3>
+            <p class="section-description">
+              Select a vendor to review its profile and public-safe purchase history.
+            </p>
+          </div>
+          <label class="detail-vendor-select">
+            <span>Vendor</span>
+            <select id="detailVendorSelect">
+              <option value="">Choose a vendor</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="detail-empty" id="vendorDetailEmpty">
+          Choose a vendor above or use <strong>View purchases</strong> in the directory.
+        </div>
+
+        <div id="vendorDetailContent" hidden>
+          <div class="vendor-profile-header">
+            <div>
+              <p class="vendor-profile-id" id="detailVendorId">—</p>
+              <h4 id="detailVendorName">—</h4>
+            </div>
+            <div class="vendor-profile-badges" id="detailVendorBadges"></div>
+          </div>
+
+          <dl class="vendor-profile-grid">
+            <div><dt>Total spend</dt><dd id="detailTotalSpend">—</dd></div>
+            <div><dt>Purchases</dt><dd id="detailPurchaseCount">—</dd></div>
+            <div><dt>Average purchase</dt><dd id="detailAveragePurchase">—</dd></div>
+            <div><dt>First purchase</dt><dd id="detailFirstPurchase">—</dd></div>
+            <div><dt>Last purchase</dt><dd id="detailLastPurchase">—</dd></div>
+            <div><dt>Average gap</dt><dd id="detailAverageGap">—</dd></div>
+            <div><dt>Country</dt><dd id="detailCountry">—</dd></div>
+            <div><dt>Master last paid</dt><dd id="detailMasterLastPaid">—</dd></div>
+          </dl>
+
+          <div class="purchase-toolbar">
+            <label class="purchase-search">
+              <span>Find purchase reference</span>
+              <input id="purchaseSearch" type="search" maxlength="32" placeholder="PUR-…" autocomplete="off" />
+            </label>
+            <label class="compact-select compact-select--labeled">
+              <span>Purchase status</span>
+              <select id="purchaseStatusFilter">
+                <option value="all">All statuses</option>
+              </select>
+            </label>
+            <label class="compact-select compact-select--labeled">
+              <span>Order</span>
+              <select id="purchaseSortDirection">
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-scroll purchase-table-scroll">
+            <table class="purchase-table">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="table-label">Purchase reference</span></th>
+                  <th scope="col"><span class="table-label">Date</span></th>
+                  <th scope="col"><span class="table-label">Status</span></th>
+                  <th scope="col"><span class="table-label">Currency</span></th>
+                  <th scope="col"><span class="table-label">Original amount</span></th>
+                  <th scope="col"><span class="table-label">Base amount</span></th>
+                  <th scope="col"><span class="table-label">Payment hold</span></th>
+                </tr>
+              </thead>
+              <tbody id="purchaseTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="pagination purchase-pagination">
+            <p id="purchasePageSummary">—</p>
+            <div>
+              <button class="button button--ghost" id="previousPurchasePage" type="button">Previous</button>
+              <button class="button button--ghost" id="nextPurchasePage" type="button">Next</button>
+            </div>
+          </div>
+
+          <p class="privacy-note">
+            Purchase references are one-way pseudonyms generated for this deployment. Source document
+            numbers, transaction numbers, bank details, addresses, email addresses, memos, accounts,
+            approvers, and internal IDs are excluded from the public artifact.
+          </p>
         </div>
       </section>
     </main>

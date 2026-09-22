@@ -50,9 +50,11 @@ select
   latest_bill_date
 from analytics.payment_hold_summary;
 
-grant select on
+-- The static dashboard is built server-side in GitHub Actions. Browser roles do
+-- not need direct database access, so these compatibility views are locked down.
+revoke all on
   public.dashboard_summary,
   public.vendor_risk_summary,
   public.top_vendor_concentration,
   public.payment_hold_summary
-to anon, authenticated;
+from anon, authenticated;
